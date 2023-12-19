@@ -13,6 +13,7 @@ if len(physical_devices) > 0 and tf.config.experimental.get_device_details(physi
         # Invalid device or cannot modify virtual devices once initialized.
         pass
 
+import argparse
 import numpy as np
 from PIL import Image
 from PIL.Image import Resampling
@@ -23,20 +24,23 @@ from net.detector import CenterNetDetectionBlock, SimpleDecoderBlock
 from net.const import width, height, scale, feature_dim
 from net.transformer import TextTransformer
 from const import max_encoderlen, max_decoderlen, decoder_SOT, decoder_EOT, encoder_add_dim
-encoder_dim = feature_dim + encoder_add_dim
 from util_funcs import calcHist, calc_predid, decode_ruby
 
-if len(sys.argv) < 2:
-    print(sys.argv[0],'target.png','(twopass)')
-    exit(1)
+encoder_dim = feature_dim + encoder_add_dim
 
-target_file = sys.argv[1]
-twopass = False
-if len(sys.argv) > 2:
-    if 'twopass' in sys.argv[2:]:
-        twopass = True
+parser = argparse.ArgumentParser(description='Process two string arguments.')
+parser.add_argument('src', type=str, help='Source image filename')
+parser.add_argument('dest', type=str, help='Destination txt filename')
+parser.add_argument('--twopass', action='store_true', help='Twopass')
 
-im0 = Image.open(target_file).convert('RGB')
+args = parser.parse_args()
+
+src_file = args.src
+dest_file = args.dest
+twopass = args.twopass
+
+
+im0 = Image.open(src_file).convert('RGB')
 #im0 = im0.filter(ImageFilter.SHARPEN)
 im0 = np.asarray(im0)
 
@@ -49,8 +53,8 @@ class TextDetectorModel(tf.keras.models.Model):
 
     def eval(self, ds, org_img, cut_off = 0.5, locations0 = None, glyphfeatures0 = None):
         org_img = org_img.numpy()
-        print(org_img.shape)
-        print("test")
+        # print(org_img.shape)
+        # print("test")
 
         locations = [np.zeros(5+4, np.float32)]
         glyphfeatures = [np.zeros(feature_dim, np.float32)]
@@ -63,7 +67,7 @@ class TextDetectorModel(tf.keras.models.Model):
             code_all.append(np.zeros([org_img.shape[0] // scale, org_img.shape[1] // scale], np.float32))
 
         for n, inputs in ds.enumerate():
-            print(n.numpy())
+            # print(n.numpy())
             offsetx = inputs['offsetx'].numpy()
             offsety = inputs['offsety'].numpy()
 
@@ -208,12 +212,12 @@ class TransformerDecoderModel(tf.keras.models.Model):
 
 model1 = TextDetectorModel()
 last = tf.train.latest_checkpoint('ckpt1')
-print(last)
+# print(last)
 model1.load_weights(last).expect_partial()
 
 model2 = TransformerDecoderModel()
 last = tf.train.latest_checkpoint('ckpt2')
-print(last)
+# print(last)
 model2.load_weights(last).expect_partial()
 
 stepx = width * 1 // 2
@@ -224,7 +228,7 @@ pady = max(0, stepy - (im0.shape[0] - height) % stepy, height - im0.shape[0])
 im0 = np.pad(im0, [[0,pady],[0,padx],[0,0]], 'constant', constant_values=((255,255),(255,255),(255,255)))
 
 if twopass and (im0.shape[1] / stepx > 2 or im0.shape[0] / stepy > 2):
-    print('two-pass')
+    # print('two-pass')
     s = max(im0.shape[1], im0.shape[0]) / max(width, height)
     im1 = Image.fromarray(im0).resize((int(im0.shape[1] / s), int(im0.shape[0] / s)), resample=Resampling.BILINEAR)
     im1 = np.asarray(im1)
@@ -277,9 +281,9 @@ for i, (p, x, y, w, h, c1, c2, c4, c8) in enumerate(locations):
     valid_locations.append(i)
 locations = locations[valid_locations,:]
 glyphfeatures = glyphfeatures[valid_locations,:]
-print(locations.shape[0],'boxes')
+# print(locations.shape[0],'boxes')
 
-print('construct data')
+# print('construct data')
 h, w = lines.shape
 input_binary = int(0).to_bytes(4, 'little')
 input_binary += int(w).to_bytes(4, 'little')
@@ -291,13 +295,13 @@ input_binary += locations[:,1:].tobytes()
 input_binary += int(im0.shape[1] // 2).to_bytes(4, 'little')
 input_binary += int(im0.shape[0] // 2).to_bytes(4, 'little')
 
-print('run')
+# print('run')
 result = subprocess.run('./linedetect', input=input_binary, stdout=subprocess.PIPE).stdout
 detected_boxes = []
 p = 0
 max_block = 0
 count = int.from_bytes(result[p:p+4], byteorder='little')
-print(count)
+# print(count)
 p += 4
 for i in range(count):
     id = int.from_bytes(result[p:p+4], byteorder='little', signed=True)
@@ -374,7 +378,7 @@ while i < features.shape[0]:
                 break
     else:
         j = features.shape[0]-1
-    print(i,j)
+    # print(i,j)
     encoder_input = tf.constant(features[i:j+1,:], tf.int32)
     encoder_len = tf.shape(encoder_input)[0]
     encoder_input = tf.pad(encoder_input, [[0, max_encoderlen - encoder_len], [0, 0]])
@@ -391,7 +395,7 @@ while i < features.shape[0]:
 
     count = count.numpy()
     code = output[0].numpy().astype(np.int32)
-    print(code)
+    # print(code)
     str_code = code[1:count]
     str_text = ''.join([chr(c) if c < 0x110000 else placeholder for c in str_code])
     result_txt += str_text
@@ -400,5 +404,5 @@ while i < features.shape[0]:
 print("---------------------")
 print(decode_ruby(result_txt))
 
-with open('out.txt', 'w') as f:
+with open(args.dest, 'a') as f:
     f.write(result_txt)
