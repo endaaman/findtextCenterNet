@@ -21,7 +21,7 @@ import subprocess
 
 from net.detector import CenterNetDetectionBlock, SimpleDecoderBlock
 from net.const import width, height, scale, feature_dim
-from net.transformer import TextTransformer 
+from net.transformer import TextTransformer
 from const import max_encoderlen, max_decoderlen, decoder_SOT, decoder_EOT, encoder_add_dim
 encoder_dim = feature_dim + encoder_add_dim
 from util_funcs import calcHist, calc_predid, decode_ruby
@@ -174,7 +174,7 @@ class TextDetectorModel(tf.keras.models.Model):
                     continue
             done_area = np.vstack([done_area, np.array([cx, cy, w, h])])
             selected_idx.append(i)
-        
+
         if len(selected_idx) > 0:
             selected_idx = np.array(selected_idx)
 
@@ -338,10 +338,10 @@ for id, block, idx, subidx, subtype in detected_boxes:
         ruby = 1
     elif subtype & 2+4 == 2:
         rubybase = 1
-    
+
     if subtype & 8 == 8:
         space = 1
-    
+
     g = np.concatenate([glyphfeatures[id,:], np.array([space,ruby,rubybase,0], np.float32)])
     features.append(g)
 features = np.array(features, np.float32)
@@ -363,6 +363,7 @@ def call_loop(decoder_input, i, encoder_output, encoder_input):
 
 i = 0
 result_txt = ''
+placeholder = ''
 while i < features.shape[0]:
     j = i + (max_encoderlen - 10)
     if j < features.shape[0]-1:
@@ -392,9 +393,12 @@ while i < features.shape[0]:
     code = output[0].numpy().astype(np.int32)
     print(code)
     str_code = code[1:count]
-    str_text = ''.join([chr(c) if c < 0x110000 else '\uFFFD' for c in str_code])
+    str_text = ''.join([chr(c) if c < 0x110000 else placeholder for c in str_code])
     result_txt += str_text
     i = j+1
 
 print("---------------------")
 print(decode_ruby(result_txt))
+
+with open('out.txt', 'w') as f:
+    f.write(result_txt)

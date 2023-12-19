@@ -7,6 +7,13 @@ data/jpfont/
 data/handwritten/
 result/
 
+ckpt1
+ckpt2
+linedetect
+render_font/render_font
+render_font/test_font
+tmp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

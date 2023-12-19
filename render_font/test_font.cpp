@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <sstream>
@@ -19,8 +20,8 @@ uint16_t read_uint16(FT_Bytes data)
 
 uint32_t read_uint32(FT_Bytes data)
 {
-	return (uint32_t)*data << 24 
-		| (uint32_t)*(data + 1) << 16 
+	return (uint32_t)*data << 24
+		| (uint32_t)*(data + 1) << 16
 		| (uint32_t)*(data + 2) << 8
 		| *(data + 3);
 }
@@ -359,7 +360,7 @@ int main(int argc, char *argv[])
 										subLigature[ss.str()] = ligatureGlyph;
 									}
 									ligaGlyphMap[convergeGlyph[j]] = subLigature;
-								}								
+								}
 							}
 						}
 					}
@@ -405,5 +406,5 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	return 0;	
+	return 0;
 }

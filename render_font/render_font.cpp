@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <sstream>
@@ -27,8 +28,8 @@ uint16_t read_uint16(FT_Bytes data)
 
 uint32_t read_uint32(FT_Bytes data)
 {
-	return (uint32_t)*data << 24 
-		| (uint32_t)*(data + 1) << 16 
+	return (uint32_t)*data << 24
+		| (uint32_t)*(data + 1) << 16
 		| (uint32_t)*(data + 2) << 8
 		| *(data + 3);
 }
@@ -340,7 +341,7 @@ void load_convert(FT_Face &face, std::map<uint16_t, uint16_t> &vertGlyphMap, std
 										subLigature[ss.str()] = ligatureGlyph;
 									}
 									ligaGlyphMap[convergeGlyph[j]] = std::make_pair(max_componentCount, subLigature);
-								}								
+								}
 							}
 						}
 					}
@@ -481,7 +482,7 @@ int render_glyph(FT_Face &face, const std::vector<FT_UInt> glyphindex_list, std:
 			fwrite(&bearingX, sizeof(int32_t), 1, stdout);
 			fwrite(&bearingY, sizeof(int32_t), 1, stdout);
 			fwrite(&advance, sizeof(int32_t), 1, stdout);
-		}		
+		}
 		else if(ligaGlyphMap.count(glyph_index) == 0) {
 			if(output_glyph(face, 1, glyph_index, vertGlyphMap) != 0) {
 				return 1;
@@ -582,7 +583,7 @@ int main(int argc, char *argv[])
 		}
 		else {
 			FT_UInt glyph_index = FT_Get_Char_Index(face, charcode);
-			glyphindex_list.push_back(glyph_index);		
+			glyphindex_list.push_back(glyph_index);
 		}
 	}
 	if(glyphindex_list.size() > 0) {
@@ -591,6 +592,6 @@ int main(int argc, char *argv[])
 		};
 	}
 	fflush(stdout);
-	
-	return 0;	
+
+	return 0;
 }
